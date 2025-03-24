@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -107,6 +109,8 @@ import com.example.weatherapp.R
 //fun PreviewMyScreen() {
 //    MyScreen()
 //}
+
+
 @Composable
 fun WeatherScreen() {
     Box(
@@ -115,7 +119,7 @@ fun WeatherScreen() {
             .background(Color.Black)
     ) {
         Image(
-            painter = painterResource(id = R.drawable.sky_background),
+            painter = painterResource(id = R.drawable.b4),
             contentDescription = "Weather Background",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
@@ -125,11 +129,12 @@ fun WeatherScreen() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             WeatherHeader()
+            Spacer(modifier = Modifier.height(20.dp))
             WeatherInfo()
+            Spacer(modifier = Modifier.height(20.dp))
             WeatherForecast()
         }
     }
@@ -138,20 +143,36 @@ fun WeatherScreen() {
 @Composable
 fun WeatherHeader() {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            imageVector = Icons.Default.LocationOn,
-            contentDescription = "Location",
-            tint = Color.White
-        )
-        Text(text = "Paris", color = Color.White, fontSize = 20.sp)
-        Icon(
-            imageVector = Icons.Default.Menu,
-            contentDescription = "Menu",
-            tint = Color.White
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = "Location",
+                tint = Color.White
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "Paris",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        IconButton(onClick = { /* TODO: Open menu */ }) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Menu",
+                tint = Color.White
+            )
+        }
     }
 }
 
@@ -169,12 +190,14 @@ fun WeatherInfo() {
             fontSize = 14.sp,
             color = Color.White.copy(alpha = 0.7f)
         )
+        Spacer(modifier = Modifier.height(12.dp))
         Icon(
-            imageVector = Icons.Default.Favorite,
+            painter = painterResource(id = R.drawable.icon_humidity),
             contentDescription = "Weather Icon",
-            tint = Color.Yellow,
-            modifier = Modifier.size(50.dp)
+            tint = Color.White,
+            modifier = Modifier.size(60.dp)
         )
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "Clear",
             fontSize = 24.sp,
@@ -186,6 +209,7 @@ fun WeatherInfo() {
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
+        Spacer(modifier = Modifier.height(16.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround
@@ -199,42 +223,74 @@ fun WeatherInfo() {
 
 @Composable
 fun WeatherDetail(title: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .background(Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+            .padding(8.dp)
+    ) {
         Text(text = title, color = Color.White, fontSize = 14.sp)
-        Text(text = value, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = value,
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
 @Composable
 fun WeatherForecast() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.SpaceAround
+    LazyRow(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        WeatherDay("Wed 16", "22°", Icons.Default.LocationOn)
-        WeatherDay("Thu 17", "25°", Icons.Default.Add)
-        WeatherDay("Fri 18", "23°", Icons.Default.DateRange)
-        WeatherDay("Sat 19", "25°", Icons.Default.Email)
+        items(listOf(
+            DailyForecast("Wed 16", "22°", R.drawable.icon_pressure),
+            DailyForecast("Thu 17", "25°", R.drawable.icon_humidity),
+            DailyForecast("Fri 18", "23°", R.drawable.wind_speed_icon),
+            DailyForecast("Sat 19", "25°", R.drawable.icon_pressure)
+        )) { forecast ->
+            WeatherDay(forecast)
+        }
     }
 }
 
 @Composable
-fun WeatherDay(day: String, temp: String, icon: ImageVector) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = day, color = Color.White, fontSize = 14.sp)
-        Icon(imageVector = icon, contentDescription = "Weather Icon", tint = Color.White)
-        Text(text = temp, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+fun WeatherDay(forecast: DailyForecast) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .padding(horizontal = 8.dp)
+            .background(Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(12.dp))
+            .padding(8.dp)
+    ) {
+        Text(text = forecast.day, color = Color.White, fontSize = 14.sp)
+        Icon(
+            painter = painterResource(id = forecast.iconRes),
+            contentDescription = "Weather Icon",
+            tint = Color.White,
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            text = forecast.temperature,
+            color = Color.White,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewWeatherScreen() {
-//    WeatherScreen()
-//}
+data class DailyForecast(
+    val day: String,
+    val temperature: String,
+    val iconRes: Int
+)
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewWeatherScreen() {
+    WeatherScreen()
+}
 //@Composable
 //fun WeatherScreen(
 //    cityName: String = "Paris",
