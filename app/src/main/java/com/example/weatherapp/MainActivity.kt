@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.weatherapp.home.WeatherScreen
+//import com.example.weatherapp.home.WeatherScreen
 import com.example.weatherapp.settings.SettingsScreen
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 
@@ -21,6 +22,7 @@ class MainActivity : ComponentActivity() {
        // enableEdgeToEdge()
         setContent {
            WeatherAppTheme {
+
                WeatherScreen()
 
 //                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding -> SettingScreen()
