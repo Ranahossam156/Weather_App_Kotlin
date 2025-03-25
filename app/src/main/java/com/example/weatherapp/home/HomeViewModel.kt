@@ -18,9 +18,13 @@ import java.util.Locale
 import android.Manifest
 import android.app.AlertDialog
 import android.content.Intent
+import com.example.weatherapp.data.repo.WeatherRepository
+import com.example.weatherapp.data.repository.WeatherRepositoryImplementation
+import com.example.weatherapp.utils.Response
+import kotlinx.coroutines.flow.asStateFlow
 
 
-class HomeViewModel(private val context: Context) : ViewModel() {
+class HomeViewModel(private val context: Context,private val repository: WeatherRepository) : ViewModel() {
 
     private val _currentCity = MutableStateFlow("Fetching location...")
     val currentCity: StateFlow<String> = _currentCity
@@ -29,6 +33,10 @@ class HomeViewModel(private val context: Context) : ViewModel() {
     private val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
+
+
+    private val _weatherState = MutableStateFlow<Response>(Response.Loading)
+    val weatherState = _weatherState.asStateFlow()
     fun checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(
                 context,
@@ -66,9 +74,12 @@ class HomeViewModel(private val context: Context) : ViewModel() {
             object : LocationCallback() {
                 override fun onLocationResult(locationResult: LocationResult) {
                     locationResult.lastLocation?.let { location ->
+                        val lat = location.latitude
+                        val lon = location.longitude
                         viewModelScope.launch {
-                            _currentCity.emit(getCityName(location.latitude, location.longitude))
+                            _currentCity.emit(getCityName(lat, lon))
                         }
+                        fetchWeather(lat, lon)
                     }
                 }
             },
@@ -76,18 +87,30 @@ class HomeViewModel(private val context: Context) : ViewModel() {
         )
     }
 
+
     private fun getCityName(latitude: Double, longitude: Double): String {
         val geocoder = Geocoder(context, Locale.getDefault())
         val addresses = geocoder.getFromLocation(latitude, longitude, 1)
         return addresses?.get(0)?.locality ?: "Unknown location"
     }
+    fun fetchWeather(lat: Double, lon: Double) {
+        val apiKey = "8312b9a01f34b592da08b4a0f069890f"
+
+                viewModelScope.launch {
+            repository.getCurrentWeather(lat, lon, apiKey).collect { response ->
+                _weatherState.value = response
+            }
+        }
+    }
+
 }
 
-class HomeViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
+class HomeViewModelFactory(private val context: Context, private val repository: WeatherRepositoryImplementation)
+    : ViewModelProvider.Factory {
+
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(HomeViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return HomeViewModel(context) as T
+            return HomeViewModel(context, repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

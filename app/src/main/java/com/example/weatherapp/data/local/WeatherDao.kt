@@ -1,5 +1,5 @@
-package com.example.weatherapp.data.local
-
-class WeatherDao {
-
-}
+//package com.example.weatherapp.data.local
+//
+//class WeatherDao {
+//
+//}

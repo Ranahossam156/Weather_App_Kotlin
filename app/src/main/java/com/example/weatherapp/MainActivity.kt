@@ -3,11 +3,8 @@ package com.example.weatherapp
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.location.Geocoder
-import android.location.LocationManager
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -16,12 +13,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
+import com.example.weatherapp.data.remote.RetrofitHelper
+import com.example.weatherapp.data.remote.WeatherRemoteDataSource
+import com.example.weatherapp.data.repository.WeatherRepositoryImplementation
 import com.example.weatherapp.home.HomeViewModel
 import com.example.weatherapp.home.HomeViewModelFactory
 import com.example.weatherapp.home.WeatherScreen
 import com.example.weatherapp.ui.theme.WeatherAppTheme
 import com.google.android.gms.location.*
-import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: HomeViewModel
@@ -29,7 +28,17 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this, HomeViewModelFactory(this)).get(HomeViewModel::class.java)
+        // Repository setup similar to your ProductRepository example
+        val repository = WeatherRepositoryImplementation.getInstance(
+            WeatherRemoteDataSource(RetrofitHelper.retrofitService)
+          //  WeatherLocalDataSource(AppDatabase.getDatabase(this).weatherDao())
+        )
+
+//        val repository = WeatherRepositoryImplementation.getInstance(
+//            WeatherRemoteDataSource(RetrofitHelper.retrofitService)
+//        )
+
+        viewModel = ViewModelProvider(this, HomeViewModelFactory(this, repository)).get(HomeViewModel::class.java)
 
         setContent {
             WeatherAppTheme {
@@ -43,10 +52,11 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                WeatherScreen(city = city)
+                WeatherScreen(city = city, viewModel = viewModel)
             }
         }
     }
+
     private fun showLocationDisabledDialog() {
         AlertDialog.Builder(this)
             .setTitle("Enable Location")
