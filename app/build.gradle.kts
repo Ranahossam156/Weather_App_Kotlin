@@ -67,6 +67,8 @@ dependencies {
     //LiveData & Compose
     val compose_version = "1.0.0"
     implementation ("androidx.compose.runtime:runtime-livedata:$compose_version")
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+
 
 
     testImplementation(libs.junit)

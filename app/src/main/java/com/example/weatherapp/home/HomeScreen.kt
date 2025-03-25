@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import com.example.weatherapp.R
 
 @Composable
-fun WeatherScreen() {
+fun WeatherScreen(city: String) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -35,7 +35,7 @@ fun WeatherScreen() {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            WeatherHeader()
+            WeatherHeader(city)
             Spacer(modifier = Modifier.height(20.dp))
             WeatherInfo()
             Spacer(modifier = Modifier.height(20.dp))
@@ -45,6 +45,41 @@ fun WeatherScreen() {
         }
     }
 }
+
+@Composable
+fun WeatherHeader(city: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.LocationOn,
+                contentDescription = "Location",
+                tint = Color.White
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = city,
+                color = Color.White,
+                fontSize = 20.sp
+            )
+        }
+
+        IconButton(onClick = { /* TODO: Open menu */ }) {
+            Icon(
+                imageVector = Icons.Default.Menu,
+                contentDescription = "Menu",
+                modifier = Modifier.size(35.dp),
+                tint = Color.White
+            )
+        }
+    }
+}
+
 
 @Composable
 fun BackgroundImage() {
@@ -67,40 +102,40 @@ fun BackgroundImage() {
     }
 }
 
-@Composable
-fun WeatherHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = "Location",
-                tint = Color.White
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = "Paris",
-                color = Color.White,
-                fontSize = 20.sp,
-               // fontWeight = FontWeight.Bold
-            )
-        }
-
-        IconButton(onClick = { /* TODO: Open menu */ }) {
-            Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = "Menu",
-                modifier = Modifier.size(35.dp),
-                tint = Color.White
-            )
-        }
-    }
-}
+//@Composable
+//fun WeatherHeader() {
+//    Row(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(12.dp),
+//        horizontalArrangement = Arrangement.SpaceBetween,
+//        verticalAlignment = Alignment.CenterVertically
+//    ) {
+//        Row(verticalAlignment = Alignment.CenterVertically) {
+//            Icon(
+//                imageVector = Icons.Default.LocationOn,
+//                contentDescription = "Location",
+//                tint = Color.White
+//            )
+//            Spacer(modifier = Modifier.width(4.dp))
+//            Text(
+//                text = "Paris",
+//                color = Color.White,
+//                fontSize = 20.sp,
+//               // fontWeight = FontWeight.Bold
+//            )
+//        }
+//
+//        IconButton(onClick = { /* TODO: Open menu */ }) {
+//            Icon(
+//                imageVector = Icons.Default.Menu,
+//                contentDescription = "Menu",
+//                modifier = Modifier.size(35.dp),
+//                tint = Color.White
+//            )
+//        }
+//    }
+//}
 
 @Composable
 fun WeatherInfo() {
@@ -263,11 +298,11 @@ fun WeatherItemView(item: WeatherItem) {
 
 data class WeatherItem(val day: String, val icon: Int, val temperature: String, val windSpeed: String)
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewWeatherScreen() {
-    WeatherScreen()
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewWeatherScreen() {
+//    WeatherScreen()
+//}
 //package com.example.weatherapp.home
 //
 //import androidx.compose.foundation.Image
