@@ -25,6 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.weatherapp.R
 import com.example.weatherapp.data.models.CurrentWeatherForecast
+import com.example.weatherapp.data.models.FiveDaysForecast
+import com.example.weatherapp.data.models.Item8
 import com.example.weatherapp.utils.Response
 import com.skydoves.landscapist.glide.GlideImage
 
@@ -34,6 +36,7 @@ fun WeatherScreen(
     viewModel: HomeViewModel
 ) {
     val weatherState by viewModel.weatherState.collectAsState()
+    val futureState by viewModel.futureWeatherState.collectAsState()
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -65,8 +68,34 @@ fun WeatherScreen(
                             clouds = "${weather.clouds.all}%"
                         )
                     }
-                    item { WeatherForecast() }
+
+                    when (futureState) {
+                        is Response.Loading -> {
+                            item {
+                                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                            }
+                        }
+                        is Response.Success -> {
+                            val forecastData = (futureState as Response.Success).data
+                            item {
+                                WeatherForecast(forecastList = forecastData.list)
+                            }
+                            item {
+                                FiveDaysForecast(fiveDaysForecast = forecastData)
+                            }
+                        }
+                        is Response.Failure -> {
+                            item {
+                                Text(
+                                    text = "Error: ${(futureState as Response.Failure).error.message}",
+                                    color = Color.Red,
+                                    modifier = Modifier.align(Alignment.Center)
+                                )
+                            }
+                        }
+                    }
                 }
+
             }
 
             is Response.Failure -> {
@@ -262,29 +291,20 @@ fun WeatherInfo(weather: CurrentWeatherForecast) {
 
 
 @Composable
-fun WeatherForecast() {
-    LazyRow(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        items(
-            listOf(
-                DailyForecast("Now", "22°", R.drawable.sun),
-                DailyForecast("15:00", "20°", R.drawable.wind_speed_icon),
-                DailyForecast("16:00", "21°", R.drawable.sun),
-                DailyForecast("17:00", "18°", R.drawable.icon_pressure),
-                DailyForecast("18:00", "21°", R.drawable.wind_speed_icon),
-                DailyForecast("19:00", "18°", R.drawable.icon_pressure),
-                DailyForecast("20:00", "21°", R.drawable.wind_speed_icon),
-                DailyForecast("21:00", "18°", R.drawable.icon_pressure)
-            )
-        ) { forecast ->
-            WeatherDay(forecast)
+fun WeatherForecast(forecastList: List<Item8>) {
+    LazyRow(modifier = Modifier.fillMaxWidth()) {
+        items(forecastList) { forecast ->
+            val time = forecast.dt_txt.substringAfter(" ")
+            val temperature = "${forecast.main.temp.toInt()}°"
+            val iconUrl = "https://openweathermap.org/img/wn/${forecast.weather.firstOrNull()?.icon}@2x.png"
+
+            WeatherDay(time = time, temperature = temperature, iconUrl = iconUrl)
         }
     }
 }
 
 @Composable
-fun WeatherDay(forecast: DailyForecast) {
+fun WeatherDay(time: String, temperature: String, iconUrl: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -297,23 +317,21 @@ fun WeatherDay(forecast: DailyForecast) {
             )
             .padding(12.dp)
     ) {
-        Text(text = forecast.day, color = Color.White, fontSize = 16.sp)
+        Text(text = time, color = Color.White, fontSize = 16.sp)
         Spacer(modifier = Modifier.height(8.dp))
-        Icon(
-            painter = painterResource(id = forecast.iconRes),
-            contentDescription = "Weather Icon",
-            modifier = Modifier.size(32.dp),
-            tint = Color.Unspecified,
+        GlideImage(
+            imageModel = { iconUrl },
+            modifier = Modifier.size(32.dp)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = forecast.temperature,
+            text = temperature,
             color = Color.White,
-            fontSize = 20.sp,
-            //fontWeight = FontWeight.Bold
+            fontSize = 20.sp
         )
     }
 }
+
 
 data class DailyForecast(
     val day: String,
@@ -321,14 +339,8 @@ data class DailyForecast(
     val iconRes: Int
 )
 @Composable
-fun FiveDaysForecast() {
-    val forecastData = listOf(
-        WeatherItem("Wed 16", R.drawable.sun, "Sunny", "22°"),
-        WeatherItem("Thu 17", R.drawable.icon_humidity, "Windy", "25°"),
-        WeatherItem("Fri 18", R.drawable.sun, "Sunny", "40°"),
-        WeatherItem("Sat 19", R.drawable.wind_speed_icon, "Windy", "25°"),
-        WeatherItem("Sun 20", R.drawable.sun, "Sunny", "30°")
-    )
+fun FiveDaysForecast(fiveDaysForecast: FiveDaysForecast) {
+    val groupedForecasts = fiveDaysForecast.list.groupBy { it.dt_txt.substringBefore(" ") }
 
     Card(
         modifier = Modifier
@@ -345,13 +357,33 @@ fun FiveDaysForecast() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            forecastData.forEach { item ->
-                WeatherItemView(item)
+            groupedForecasts.forEach { (date, forecasts) ->
+                val forecast = forecasts.first()
+                val dayLabel = date
+                val temperature = "${forecast.main.temp.toInt()}°"
+                val iconUrl = "https://openweathermap.org/img/wn/${forecast.weather.firstOrNull()?.icon}@2x.png"
+                val description = forecast.weather.firstOrNull()?.main ?: "Unknown"
+
+                WeatherItemView(
+                    WeatherItem(
+                        day = dayLabel,
+                        icon = iconUrl,
+                        temperature = temperature,
+                        windSpeed = description
+                    )
+                )
             }
         }
     }
 }
 
+
+data class WeatherItem(
+    val day: String,
+    val icon: String,
+    val temperature: String,
+    val windSpeed: String
+)
 
 @Composable
 fun WeatherItemView(item: WeatherItem) {
@@ -362,19 +394,30 @@ fun WeatherItemView(item: WeatherItem) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = item.day, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = item.day,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
 
-        Image(
-            painter = painterResource(id = item.icon),
-            contentDescription = "Weather Icon",
+        GlideImage(
+            imageModel = { item.icon },
             modifier = Modifier.size(32.dp)
         )
 
-        Text(text = item.temperature, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = item.temperature,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
 
-        Text(text = item.windSpeed, color = Color.White, fontSize = 16.sp)
+        Text(
+            text = item.windSpeed,
+            color = Color.White,
+            fontSize = 16.sp
+        )
     }
 }
 
-
-data class WeatherItem(val day: String, val icon: Int, val temperature: String, val windSpeed: String)
