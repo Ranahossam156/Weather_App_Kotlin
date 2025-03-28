@@ -70,7 +70,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.1.0")
     implementation("com.github.bumptech.glide:glide:4.15.1")
     implementation("com.github.skydoves:landscapist-glide:2.1.8")
-
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
 
 
     testImplementation(libs.junit)

@@ -12,16 +12,17 @@ interface WeatherService {
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String,
-        @Query("units") units: String = "metric",
-        @Query("lang") lang: String = "en"
-
+        @Query("units") units: String,
+        @Query("lang") lang: String
     ): Response<CurrentWeatherForecast>
+
     @GET("forecast")
     suspend fun getFutureForecast(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
         @Query("appid") apiKey: String,
-        @Query("units") units: String = "metric",
-        @Query("lang") lang: String = "en"
+        @Query("units") units: String,
+        @Query("lang") lang: String
     ): Response<FiveDaysForecast>
 }
+

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather App</string>
+    <string name="settings">الإعدادات</string>
+    <string name="location">الموقع</string>
+    <string name="wind_speed">سرعة الرياح</string>
+    <string name="language">اللغة</string>
+    <string name="notification">الإشعارات</string>
+    <string name="gps">نظام تحديد المواقع</string>
+    <string name="map">الخريطة</string>
+    <string name="meter_per_second">متر/ثانية</string>
+    <string name="mile_per_hour">ميل/ساعة</string>
+    <string name="english">الإنجليزية</string>
+    <string name="arabic">العربية</string>
+    <string name="enable">تفعيل</string>
+    <string name="disable">تعطيل</string>
+    <string name="back">رجوع</string>
+</resources>

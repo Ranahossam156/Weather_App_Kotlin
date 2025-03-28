@@ -6,12 +6,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import retrofit2.HttpException
+import retrofit2.http.Query
 import java.io.IOException
 
 class WeatherRemoteDataSource(private val service: WeatherService) : IWeatherRemoteDataSource {
-    override suspend fun getWeather(lat: Double, lon: Double, apiKey: String): Flow<CurrentWeatherForecast?> {
+    override suspend fun getWeather(lat: Double, lon: Double, apiKey: String, units: String, lang: String): Flow<CurrentWeatherForecast?> {
         return try {
-            val response = service.getWeather(lat, lon, apiKey)
+            val response = service.getWeather(lat, lon, apiKey,units,lang)
             if (response.isSuccessful) {
                 flowOf(response.body())
             } else {
@@ -28,9 +29,11 @@ class WeatherRemoteDataSource(private val service: WeatherService) : IWeatherRem
         lat: Double,
         lon: Double,
         apiKey: String
+        , units: String,
+        lang: String
     ): Flow<FiveDaysForecast?> {
         return try {
-            val response = service.getFutureForecast(lat, lon, apiKey)
+            val response = service.getFutureForecast(lat, lon, apiKey, units, lang)
             if (response.isSuccessful) {
                 flowOf(response.body())
             } else {

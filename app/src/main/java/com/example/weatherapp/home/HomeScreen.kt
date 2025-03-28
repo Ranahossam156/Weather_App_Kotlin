@@ -23,33 +23,54 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.weatherapp.R
 import com.example.weatherapp.data.models.CurrentWeatherForecast
 import com.example.weatherapp.data.models.FiveDaysForecast
 import com.example.weatherapp.data.models.Item8
+import com.example.weatherapp.data.sharedPreferences.SharedPreferencesDataSource
+import com.example.weatherapp.settings.SettingsScreen
 import com.example.weatherapp.utils.Response
+import com.example.weatherapp.utils.formatDateTime
 import com.skydoves.landscapist.glide.GlideImage
+@Composable
+fun WeatherAppNavHost(city: String, navController: NavHostController, weatherViewModel: HomeViewModel,sharedPreferencesDataSource: SharedPreferencesDataSource) {
+    NavHost(navController = navController, startDestination = "weather") {
+        composable("weather") {
+            WeatherScreen(city,weatherViewModel,navController,sharedPreferencesDataSource)
+        }
+        composable("settings") {
+            SettingsScreen(navController,sharedPreferencesDataSource,onSettingsChanged = { weatherViewModel.refreshWeather() })
+        }
+    }
+}
+
 
 @Composable
 fun WeatherScreen(
     city: String,
-    viewModel: HomeViewModel
+    viewModel: HomeViewModel,
+    navController: NavHostController,
+    sharedPreferencesDataSource: SharedPreferencesDataSource
 ) {
-    val weatherState by viewModel.weatherState.collectAsState()
-    val futureState by viewModel.futureWeatherState.collectAsState()
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    val isArabic = sharedPreferencesDataSource.getLanguageSetting().equals("ar", ignoreCase = true)
+
+    val weatherState = viewModel.weatherState.collectAsState()
+    val futureState = viewModel.futureWeatherState.collectAsState()
+
+    Box(modifier = Modifier.fillMaxSize()) {
         BackgroundImage()
 
-        when (weatherState) {
+        when (weatherState.value) {
             is Response.Loading -> {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
-
             is Response.Success -> {
-                val weather = (weatherState as Response.Success).data
+                val weather = (weatherState.value as Response.Success).data
 
                 LazyColumn(
                     modifier = Modifier
@@ -58,53 +79,49 @@ fun WeatherScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    item { WeatherHeader(city) }
-                    item { WeatherInfo(weather) }
+                    item { WeatherHeader(city, navController, isArabic) }
+                    item { WeatherInfo(weather, isArabic) }
                     item {
                         WeatherDetails(
                             humidity = "${weather.main.humidity}%",
-                            windSpeed = "${weather.wind.speed} km/h",
-                            pressure = "${weather.main.pressure} hPa",
-                            clouds = "${weather.clouds.all}%"
+                            windSpeed = if (isArabic) "${weather.wind.speed} كم/ساعة" else "${weather.wind.speed} km/h",
+                            pressure = if (isArabic) "${weather.main.pressure} ضغط" else "${weather.main.pressure} hPa",
+                            clouds = if (isArabic) "${weather.clouds.all} غيوم" else "${weather.clouds.all}%",
+                            isArabic = isArabic
                         )
                     }
-
-                    when (futureState) {
+                    when (futureState.value) {
                         is Response.Loading -> {
                             item {
                                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                             }
                         }
                         is Response.Success -> {
-                            val forecastData = (futureState as Response.Success).data
-                            item {
-                                WeatherForecast(forecastList = forecastData.list)
-                            }
-                            item {
-                                FiveDaysForecast(fiveDaysForecast = forecastData)
-                            }
+                            val forecastData = (futureState.value as Response.Success).data
+                            item { WeatherForecast(forecastList = forecastData.list) }
+                            item { FiveDaysForecast(fiveDaysForecast = forecastData, isArabic = isArabic) }
                         }
                         is Response.Failure -> {
                             item {
                                 Text(
-                                    text = "Error: ${(futureState as Response.Failure).error.message}",
+                                    text = "Error: ${(futureState.value as Response.Failure).error.message}",
                                     color = Color.Red,
                                     modifier = Modifier.align(Alignment.Center)
                                 )
                             }
                         }
+                        else -> { }
                     }
                 }
-
             }
-
             is Response.Failure -> {
                 Text(
-                    text = "Error: ${(weatherState as Response.Failure).error.message}",
+                    text = "Error: ${(weatherState.value as Response.Failure).error.message}",
                     color = Color.Red,
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
+            else -> { }
         }
     }
 }
@@ -114,7 +131,7 @@ fun WeatherScreen(
 
 
 @Composable
-fun WeatherHeader(city: String) {
+fun WeatherHeader(city: String, navController: NavHostController, isArabic: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,7 +142,7 @@ fun WeatherHeader(city: String) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Default.LocationOn,
-                contentDescription = "Location",
+                contentDescription = if (isArabic) "الموقع" else "Location",
                 tint = Color.White
             )
             Spacer(modifier = Modifier.width(4.dp))
@@ -135,11 +152,10 @@ fun WeatherHeader(city: String) {
                 fontSize = 20.sp
             )
         }
-
-        IconButton(onClick = { /* TODO: Open menu */ }) {
+        IconButton(onClick = { navController.navigate("settings") }) {
             Icon(
                 imageVector = Icons.Default.Menu,
-                contentDescription = "Menu",
+                contentDescription = if (isArabic) "القائمة" else "Menu",
                 modifier = Modifier.size(35.dp),
                 tint = Color.White
             )
@@ -148,11 +164,12 @@ fun WeatherHeader(city: String) {
 }
 
 
+
 @Composable
 fun BackgroundImage() {
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.b4),
+            painter = painterResource(id = R.drawable.sky_background),
             contentDescription = "Weather Background",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
@@ -204,15 +221,19 @@ fun BackgroundImage() {
 //    }
 //}
 @Composable
-fun WeatherDetails(humidity: String, windSpeed: String, pressure: String, clouds: String) {
+fun WeatherDetails(
+    humidity: String,
+    windSpeed: String,
+    pressure: String,
+    clouds: String,
+    isArabic: Boolean
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Black.copy(alpha = 0.3f)
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.3f))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -222,19 +243,36 @@ fun WeatherDetails(humidity: String, windSpeed: String, pressure: String, clouds
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                WeatherDetailItem(R.drawable.icon_humidity, "Humidity", humidity)
-                WeatherDetailItem(R.drawable.wind_speed_icon, "Wind Speed", windSpeed)
+                WeatherDetailItem(
+                    icon = R.drawable.icon_humidity,
+                    label = if (isArabic) "الرطوبة" else "Humidity",
+                    value = humidity
+                )
+                WeatherDetailItem(
+                    icon = R.drawable.wind_speed_icon,
+                    label = if (isArabic) "سرعة الرياح" else "Wind Speed",
+                    value = windSpeed
+                )
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                WeatherDetailItem(R.drawable.icon_pressure, "Pressure", pressure)
-                WeatherDetailItem(R.drawable.cloud_icon, "Clouds", clouds)
+                WeatherDetailItem(
+                    icon = R.drawable.icon_pressure,
+                    label = if (isArabic) "الضغط" else "Pressure",
+                    value = pressure
+                )
+                WeatherDetailItem(
+                    icon = R.drawable.cloud_icon,
+                    label = if (isArabic) "الغيوم" else "Clouds",
+                    value = clouds
+                )
             }
         }
     }
 }
+
 @Composable
 fun WeatherDetailItem(icon: Int, label: String, value: String) {
     Column(
@@ -257,14 +295,12 @@ fun WeatherDetailItem(icon: Int, label: String, value: String) {
 
 
 @Composable
-fun WeatherInfo(weather: CurrentWeatherForecast) {
+fun WeatherInfo(weather: CurrentWeatherForecast, isArabic: Boolean) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         GlideImage(
             imageModel = { "https://openweathermap.org/img/wn/${weather.weather?.firstOrNull()?.icon}@2x.png" },
             modifier = Modifier.size(60.dp)
         )
-
-
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "${weather.main.temp}°C",
@@ -274,19 +310,20 @@ fun WeatherInfo(weather: CurrentWeatherForecast) {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = weather.weather?.firstOrNull()?.main ?: "Unknown",
+            text = weather.weather?.firstOrNull()?.description ?: if (isArabic) "غير معروف" else "Unknown",
             fontSize = 28.sp,
             color = Color.White
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Updated ${weather.dt}",
+            text = if (isArabic) "تم التحديث ${formatDateTime(weather.dt)}" else "Updated ${formatDateTime(weather.dt)}",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = Color.White.copy(alpha = 0.7f)
         )
     }
 }
+
 
 
 
@@ -294,7 +331,7 @@ fun WeatherInfo(weather: CurrentWeatherForecast) {
 fun WeatherForecast(forecastList: List<Item8>) {
     LazyRow(modifier = Modifier.fillMaxWidth()) {
         items(forecastList) { forecast ->
-            val time = forecast.dt_txt.substringAfter(" ")
+            val time = forecast.dt_txt.substringAfter(" ").take(5)
             val temperature = "${forecast.main.temp.toInt()}°"
             val iconUrl = "https://openweathermap.org/img/wn/${forecast.weather.firstOrNull()?.icon}@2x.png"
 
@@ -339,7 +376,7 @@ data class DailyForecast(
     val iconRes: Int
 )
 @Composable
-fun FiveDaysForecast(fiveDaysForecast: FiveDaysForecast) {
+fun FiveDaysForecast(fiveDaysForecast: FiveDaysForecast, isArabic: Boolean) {
     val groupedForecasts = fiveDaysForecast.list.groupBy { it.dt_txt.substringBefore(" ") }
 
     Card(
@@ -347,9 +384,7 @@ fun FiveDaysForecast(fiveDaysForecast: FiveDaysForecast) {
             .fillMaxWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Black.copy(alpha = 0.2f)
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.Black.copy(alpha = 0.2f))
     ) {
         Column(
             modifier = Modifier
@@ -362,7 +397,7 @@ fun FiveDaysForecast(fiveDaysForecast: FiveDaysForecast) {
                 val dayLabel = date
                 val temperature = "${forecast.main.temp.toInt()}°"
                 val iconUrl = "https://openweathermap.org/img/wn/${forecast.weather.firstOrNull()?.icon}@2x.png"
-                val description = forecast.weather.firstOrNull()?.main ?: "Unknown"
+                val description = forecast.weather.firstOrNull()?.description ?: if (isArabic) "غير معروف" else "Unknown"
 
                 WeatherItemView(
                     WeatherItem(
@@ -370,12 +405,14 @@ fun FiveDaysForecast(fiveDaysForecast: FiveDaysForecast) {
                         icon = iconUrl,
                         temperature = temperature,
                         windSpeed = description
-                    )
+                    ),
+                    isArabic = isArabic
                 )
             }
         }
     }
 }
+
 
 
 data class WeatherItem(
@@ -386,7 +423,7 @@ data class WeatherItem(
 )
 
 @Composable
-fun WeatherItemView(item: WeatherItem) {
+fun WeatherItemView(item: WeatherItem, isArabic: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -400,24 +437,22 @@ fun WeatherItemView(item: WeatherItem) {
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-
         GlideImage(
             imageModel = { item.icon },
             modifier = Modifier.size(32.dp)
         )
-
+        Text(
+            text = item.windSpeed,
+            color = Color.White,
+            fontSize = 16.sp
+        )
         Text(
             text = item.temperature,
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
-
-        Text(
-            text = item.windSpeed,
-            color = Color.White,
-            fontSize = 16.sp
-        )
     }
 }
+
 
